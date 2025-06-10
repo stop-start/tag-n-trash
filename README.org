@@ -1,0 +1,105 @@
+#+TITLE: tag-n-trash
+#+AUTHOR: stop.start
+#+OPTIONS: toc:nil
+
+* tag-n-trash: Visually mark and manage code for deletion
+
+`tag-n-trash` is a minor mode for Emacs that lets easily mark for deletion temporary or debug code. It provides visual highlighting of these marked sections and a way to bulk-delete them later.
+
+This is especially useful when debugging or experimenting. It allows to keep track of what code should be removed before a final commit — without cluttering the buffer with comments or TODOs.
+
+---
+
+* Features
+
+- ✅ Mark single lines with a short keyword (e.g. `# TRASH:`)
+- ✅ Mark multi-line blocks with `# TRASH-BEGIN` / `# TRASH-END`
+- ✅ Highlights "trash" lines in a distinct face
+- ✅ Easily delete all tagged code at once with one command
+- ✅ Language-agnostic — works in any `prog-mode` buffer
+
+---
+
+* Installation
+
+**Using Doom Emacs**
+
+1. Add the package in `~/.doom.d/packages.el`:
+   #+begin_src emacs-lisp
+   (package! tag-n-trash
+     :recipe (:host github :repo "yourname/tag-n-trash")) ;; Replace with your GitHub username
+   #+end_src
+
+2. Run:
+   #+begin_src shell
+   doom sync
+   #+end_src
+
+3. Enable in `~/.doom.d/config.el`:
+   #+begin_src emacs-lisp
+   (use-package! tag-n-trash
+     :hook (prog-mode . tag-n-trash-mode))
+   #+end_src
+
+**Using straight.el or vanilla Emacs**
+
+Clone the repo somewhere and add to `load-path`:
+#+begin_src emacs-lisp
+(add-to-list 'load-path "/path/to/tag-n-trash/")
+(require 'tag-n-trash)
+(add-hook 'prog-mode-hook #'tag-n-trash-mode)
+#+end_src
+
+---
+
+* Usage
+
+Once `tag-n-trash-mode` is enabled, use the following markers:
+
+- **Single-line tag**:
+  #+begin_src python
+  print(debug_info)  # TRASH: remove before commit
+  #+end_src
+
+- **Multi-line block**:
+  #+begin_src python
+  # TRASH-BEGIN
+  print("Debug 1")
+  some_temp_var = compute(x)
+  # TRASH-END
+  #+end_src
+
+These lines will be highlighted using a special face.
+
+To delete all tagged code at once, run:
+#+begin_src emacs-lisp
+M-x tag-n-trash-delete-all
+#+end_src
+
+This command will:
+- Remove all single-line `TRASH:` lines
+- Remove all blocks between `TRASH-BEGIN` and `TRASH-END`
+
+---
+
+* Customization
+
+You can change the highlight color by customizing the face:
+
+#+begin_src emacs-lisp
+(custom-set-faces!
+  '(tag-n-trash-face :background "#330000" :foreground "#ff6666" :weight bold))
+#+end_src
+
+---
+
+* License
+
+This project is licensed under the MIT License. See [[file:LICENSE][LICENSE]] for details.
+
+---
+
+* Contributions
+
+Contributions, bug reports, and suggestions are welcome!
+Feel free to open an issue or merge request on [[https://gitlab.com/stop.start/tag-n-trash][GitLab]] or [[https://github.com/yourname/tag-n-trash][GitHub mirror]].
