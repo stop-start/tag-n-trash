@@ -95,11 +95,53 @@ You can change the highlight color by customizing the face:
 
 * License
 
-This project is licensed under the MIT License. See [[file:LICENSE][LICENSE]] for details.
-
----
-
-* Contributions
-
-Contributions, bug reports, and suggestions are welcome!
-Feel free to open an issue or merge request on [[https://gitlab.com/stop.start/tag-n-trash][GitLab]] or [[https://github.com/yourname/tag-n-trash][GitHub mirror]].
+This project is licensed under the GNU General Public License v3.0.  See [[file:LICENSE][LICENSE]] for details.
+                                     
+---                                  
+                                     
+* Contributions                      
+                                     
+Contributions, bug reports, and sug  gestions are welcome!
+Feel free to open an issue or merge   request on [[https://gitlab.com/stop.start/tag-n-trash][GitLab]] or [[https://github.com/yourname/tag-n-trash][GitHub mirror]].
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
+                                     
