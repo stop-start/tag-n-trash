@@ -9,7 +9,7 @@
 ;; Version: 0.1
 ;; Keywords: convenience, tools
 ;; Homepage: https://gitlab.com/stop.start/tag-n-trash
-;; Package-Requires: ((emacs "24.3"))
+;; Package-Requires: ((emacs "25.1"))
 ;;
 ;; This file is not part of GNU Emacs.
 
@@ -25,6 +25,8 @@
 
 ;;; Code:
 
+;;; tag-n-trash.el --- Highlight temporary or debug code for deletion -*- lexical-binding: t; -*-
+
 (defgroup tag-n-trash nil
   "Highlight and manage temporary trash/debug code."
   :group 'convenience)
@@ -34,31 +36,19 @@
   "Face for trash-marked code."
   :group 'tag-n-trash)
 
+(defun tag-n-trash--match-block (limit)
+  "Match block of code between #<trash> and #</trash> up to LIMIT."
+  (when (re-search-forward "^[ \t]*#<trash>" limit t)
+    (let ((start (match-beginning 0)))
+      (if (re-search-forward "^[ \t]*#</trash>" limit t)
+          (let ((end (match-end 0)))
+            (set-match-data (list start end))
+            t)
+        nil))))
+
 (defvar tag-n-trash--font-lock-keywords
-  '(("^[ \t]*;;[ \t]*TRASH:.*$" . 'tag-n-trash-face)
-    ("^[ \t]*#<trash>.*$" . 'tag-n-trash-face)
-    ("^[ \t]*#</trash>.*$" . 'tag-n-trash-face)
-    ("^[ \t]*\\(.*\\)$"
-     (0 (when (and (boundp 'tag-n-trash--in-block)
-                   tag-n-trash--in-block)
-          'tag-n-trash-face))))
-  "Font-lock rules for `tag-n-trash-mode`.")
-
-(defvar-local tag-n-trash--in-block nil
-  "Internal flag for tracking if inside a trash block.")
-
-(defun tag-n-trash--update-block-state ()
-  "Update font-lock state for trash block."
-  (save-excursion
-    (goto-char (point-min))
-    (setq tag-n-trash--in-block nil)
-    (while (re-search-forward "^.*$" nil t)
-      (let ((line (match-string 0)))
-        (cond
-         ((string-match-p "^[ \t]*#<trash>" line)
-          (setq tag-n-trash--in-block t))
-         ((string-match-p "^[ \t]*#</trash>" line)
-          (setq tag-n-trash--in-block nil)))))))
+  '(("^[ \t]*\\(?:;;\\|#\\|//\\)[ \t]*TRASH:.*$" . 'tag-n-trash-face)
+    (tag-n-trash--match-block . 'tag-n-trash-face)))
 
 ;;;###autoload
 (define-minor-mode tag-n-trash-mode
@@ -67,32 +57,32 @@
   :group 'tag-n-trash
   (if tag-n-trash-mode
       (progn
-        (add-hook 'after-change-functions #'tag-n-trash--after-change nil t)
-        (tag-n-trash--update-block-state)
+        ;; Remove problematic stateful hooks
+        ;; Add font-lock rules only
         (font-lock-add-keywords nil tag-n-trash--font-lock-keywords 'append)
         (font-lock-flush))
-    (remove-hook 'after-change-functions #'tag-n-trash--after-change t)
     (font-lock-remove-keywords nil tag-n-trash--font-lock-keywords)
     (font-lock-flush)))
 
-(defun tag-n-trash--after-change (_beg _end _len)
-  "Update block state after changes."
-  (when tag-n-trash-mode
-    (tag-n-trash--update-block-state)
-    (font-lock-flush)))
 
 ;;;###autoload
 (defun tag-n-trash-cleanup ()
   "Remove all lines marked as trash."
   (interactive)
   (save-excursion
+    ;; Remove single-line TRASH comments
     (goto-char (point-min))
-    (let ((case-fold-search nil))
-      (while (re-search-forward "^[ \t]*;;[ \t]*TRASH:.*$" nil t)
-        (replace-match ""))
-      (goto-char (point-min))
-      (while (re-search-forward "^[ \t]*#<trash>\\(.*\n\\)*?[ \t]*#</trash>.*$" nil t)
-        (replace-match "")))))
+    (while (re-search-forward "^[ \t]*;;[ \t]*TRASH:.*$" nil t)
+      (replace-match ""))
+
+    ;; Remove blocks from #<trash> to #</trash>
+    (goto-char (point-min))
+    (while (re-search-forward "^[ \t]*#<trash>" nil t)
+      (let ((start (match-beginning 0)))
+        (when (re-search-forward "^[ \t]*#</trash>" nil t)
+          (let ((end (line-end-position)))
+            (delete-region start (min (point-max) (1+ end)))))))))
+
 
 (provide 'tag-n-trash)
 ;;; tag-n-trash.el ends here
