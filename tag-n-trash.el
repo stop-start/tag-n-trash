@@ -25,65 +25,67 @@
 
 ;;; Code:
 
-;;; tag-n-trash.el --- Highlight temporary or debug code for deletion -*- lexical-binding: t; -*-
+;;; tag-n-trash.el --- Highlight and clean up debug code -*- lexical-binding: t; -*-
 
-(defgroup tag-n-trash nil
-  "Highlight and manage temporary trash/debug code."
-  :group 'convenience)
-
-(defface tag-n-trash-face
-  '((t :inherit font-lock-comment-face :foreground "#ff6c6b" :weight bold))
-  "Face for trash-marked code."
+(defface tag-n-trash-highlight-face
+  '((t :inherit font-lock-warning-face :foreground "#ff6c6b" :weight bold :extend t))
+  "Face for trash block."
   :group 'tag-n-trash)
 
-(defun tag-n-trash--match-block (limit)
-  "Match block of code between #<trash> and #</trash> up to LIMIT."
-  (let (start end)
-    (when (re-search-forward "^[ \t]*#<trash>" limit t)
-      (setq start (match-beginning 0))
-      (when (and (re-search-forward "^[ \t]*#</trash>" limit t)
-                 (< (match-end 0) limit))  ;; Ensure it's within limit
-        (setq end (match-end 0))
-        (set-match-data (list start end))
-        t))))
+(defvar tag-n-trash--keywords
+  '(("^\\s-*# BEGIN_TRASH\\(\\(.\\|\n\\)*?\\)# END_TRASH\\s-*$"
+     (0 'tag-n-trash-highlight-face prepend)))
+  "Font-lock keywords used to highlight trash code blocks.")
 
-(defvar tag-n-trash--font-lock-keywords
-  '(("^[ \t]*\\(?:;;\\|#\\|//\\)[ \t]*TRASH:.*$" . 'tag-n-trash-face)
-    (tag-n-trash--match-block . 'tag-n-trash-face)))
+
+(defun tag-n-trash--setup-highlighting ()
+  "Add font-lock highlighting for trash blocks."
+  (font-lock-add-keywords nil tag-n-trash--keywords 'append))
+
+(defun tag-n-trash--remove-highlighting ()
+  "Remove font-lock highlighting for trash blocks."
+  (font-lock-remove-keywords nil tag-n-trash--keywords))
+
+
 
 ;;;###autoload
-(define-minor-mode tag-n-trash-mode
-  "Highlight and manage temporary trash/debug code."
-  :lighter " 🗑"
-  :group 'tag-n-trash
-  (if tag-n-trash-mode
-      (progn
-        ;; Remove problematic stateful hooks
-        ;; Add font-lock rules only
-        (font-lock-add-keywords nil tag-n-trash--font-lock-keywords 'append)
-        (font-lock-flush))
-    (font-lock-remove-keywords nil tag-n-trash--font-lock-keywords)
-    (font-lock-flush)))
-
+(defun tag-n-trash-empty-block ()
+  "Insert a # BEGIN_TRASH / # END_TRASH block and place point inside."
+  (interactive)
+  (let ((indent (current-indentation)))
+    (insert (make-string indent ?\s) "# BEGIN_TRASH\n")
+    (insert (make-string indent ?\s) "\n")
+    (insert (make-string indent ?\s) "# END_TRASH\n")
+    (forward-line -2)
+    (end-of-line)))
 
 ;;;###autoload
 (defun tag-n-trash-cleanup ()
-  "Remove all lines marked as trash."
+  "Remove all # BEGIN_TRASH to # END_TRASH blocks in the buffer."
   (interactive)
   (save-excursion
-    ;; Remove single-line TRASH comments
     (goto-char (point-min))
-    (while (re-search-forward "^[ \t]*\\(?:;;\\|#\\|//\\)[ \t]*TRASH:.*$" nil t)
-      (replace-match ""))
+    (while (re-search-forward "^\\s-*# BEGIN_TRASH\\s-*$" nil t)
+      (let ((begin (match-beginning 0)))
+        (if (re-search-forward "^\\s-*# END_TRASH\\s-*$" nil t)
+            (let ((end (match-end 0)))
+              ;; Delete the region from BEGIN to END, including both lines
+              (delete-region begin (1+ end))) ; 1+ to delete trailing newline
+          (message "No matching # END_TRASH found"))))))
 
-    ;; Remove blocks from #<trash> to #</trash>
-    (goto-char (point-min))
-    (while (re-search-forward "^[ \t]*#<trash>" nil t)
-      (let ((start (match-beginning 0)))
-        (when (re-search-forward "^[ \t]*#</trash>" nil t)
-          (let ((end (line-end-position)))
-            (delete-region start (min (point-max) (1+ end)))))))))
 
+;;;###autoload
+(define-minor-mode tag-n-trash-mode
+  "Minor mode to highlight and manage trash/debug code."
+  :lighter " 🗑"
+  (if tag-n-trash-mode
+      (progn
+        (tag-n-trash--setup-highlighting)
+        (font-lock-flush)
+        (font-lock-ensure))
+    (tag-n-trash--remove-highlighting)
+    (font-lock-flush)
+    (font-lock-ensure)))
 
 (provide 'tag-n-trash)
 ;;; tag-n-trash.el ends here
