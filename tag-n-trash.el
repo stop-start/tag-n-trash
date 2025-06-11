@@ -38,13 +38,14 @@
 
 (defun tag-n-trash--match-block (limit)
   "Match block of code between #<trash> and #</trash> up to LIMIT."
-  (when (re-search-forward "^[ \t]*#<trash>" limit t)
-    (let ((start (match-beginning 0)))
-      (if (re-search-forward "^[ \t]*#</trash>" limit t)
-          (let ((end (match-end 0)))
-            (set-match-data (list start end))
-            t)
-        nil))))
+  (let (start end)
+    (when (re-search-forward "^[ \t]*#<trash>" limit t)
+      (setq start (match-beginning 0))
+      (when (and (re-search-forward "^[ \t]*#</trash>" limit t)
+                 (< (match-end 0) limit))  ;; Ensure it's within limit
+        (setq end (match-end 0))
+        (set-match-data (list start end))
+        t))))
 
 (defvar tag-n-trash--font-lock-keywords
   '(("^[ \t]*\\(?:;;\\|#\\|//\\)[ \t]*TRASH:.*$" . 'tag-n-trash-face)
@@ -72,7 +73,7 @@
   (save-excursion
     ;; Remove single-line TRASH comments
     (goto-char (point-min))
-    (while (re-search-forward "^[ \t]*;;[ \t]*TRASH:.*$" nil t)
+    (while (re-search-forward "^[ \t]*\\(?:;;\\|#\\|//\\)[ \t]*TRASH:.*$" nil t)
       (replace-match ""))
 
     ;; Remove blocks from #<trash> to #</trash>
